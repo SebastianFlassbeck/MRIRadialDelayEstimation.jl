@@ -13,8 +13,8 @@ makedocs(;
     authors="MRIRadialDelayEstimation contributors",
     sitename="MRIRadialDelayEstimation.jl",
     format=Documenter.HTML(;
-        canonical="https://flasss01.github.io/MRIRadialDelayEstimation.jl",
-        edit_link="main",
+        canonical="https://SebastianFlassbeck.github.io/MRIRadialDelayEstimation.jl",
+        edit_link="master",
         assets=String[],
     ),
     pages=[
@@ -24,6 +24,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/flasss01/MRIRadialDelayEstimation.jl",
-    devbranch="main",
+    repo="github.com/SebastianFlassbeck/MRIRadialDelayEstimation.jl",
+    devbranch="master",
 )

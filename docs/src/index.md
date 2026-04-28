@@ -50,5 +50,5 @@ Pkg.add("MRIRadialDelayEstimation")
 Or for the development version:
 
 ```julia
-Pkg.add(url="https://github.com/flasss01/MRIRadialDelayEstimation.jl")
+Pkg.add(url="https://github.com/SebastianFlassbeck/MRIRadialDelayEstimation.jl")
 ```
