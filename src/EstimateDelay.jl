@@ -82,8 +82,9 @@ function estimate_delay(
         data = vec(data)  # single coil: flatten to (samples,)
     end
 
-    theta = vec(theta)
-    phi   = vec(phi)
+    # traj_kooshball expects column matrices (NSpokes, 1)
+    theta = reshape(vec(theta), :, 1)
+    phi   = reshape(vec(phi),   :, 1)
 
     # Estimate coil maps on the downsampled grid if multi-coil and not provided
     if is_multicoil && cmaps === nothing
@@ -240,6 +241,7 @@ function correct_trajectory(
     original_shape = size(trj)
     theta, phi = decompose_kooshball(trj, Nr)
     delay, _ = estimate_delay(data, theta, phi, Nr, img_shape; kwargs...)
-    trj_corrected = traj_kooshball(Nr, theta, phi; delay)
+    # traj_kooshball expects column matrices (NSpokes, 1)
+    trj_corrected = traj_kooshball(Nr, reshape(theta,:,1), reshape(phi,:,1); delay)
     return reshape(trj_corrected, original_shape)
 end

@@ -30,7 +30,7 @@ Random.seed!(0)
     ############################
     # Verify by reconstructing the trajectory
     ############################
-    trj_rebuilt = reshape(traj_kooshball(Nr, theta_est, phi_est),3,Nr,:)
+    trj_rebuilt = reshape(traj_kooshball(Nr, reshape(theta_est,:,1), reshape(phi_est,:,1)),3,Nr,:)
 
     @testset "test trajectory" begin
         @test isapprox(trj_rebuilt, trj; atol=1e-5)
