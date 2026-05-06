@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Monte Carlo Validation · MRIRadialDelayEstimation.jl</title><meta name="title" content="Monte Carlo Validation · MRIRadialDelayEstimation.jl"/><meta property="og:title" content="Monte Carlo Validation · MRIRadialDelayEstimation.jl"/><meta property="twitter:title" content="Monte Carlo Validation · MRIRadialDelayEstimation.jl"/><meta name="description" content="Documentation for MRIRadialDelayEstimation.jl."/><meta property="og:description" content="Documentation for MRIRadialDelayEstimation.jl."/><meta property="twitter:description" content="Documentation for MRIRadialDelayEstimation.jl."/><meta property="og:url" content="https://SebastianFlassbeck.github.io/MRIRadialDelayEstimation.jl/examples/monte_carlo_validation/"/><meta property="twitter:url" content="https://SebastianFlassbeck.github.io/MRIRadialDelayEstimation.jl/examples/monte_carlo_validation/"/><link rel="canonical" href="https://SebastianFlassbeck.github.io/MRIRadialDelayEstimation.jl/examples/monte_carlo_validation/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">MRIRadialDelayEstimation.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Examples</span><ul><li class="is-active"><a class="tocitem" href>Monte Carlo Validation</a><ul class="internal"><li><a class="tocitem" href="#Setup"><span>Setup</span></a></li><li><a class="tocitem" href="#Imaging-Parameters"><span>Imaging Parameters</span></a></li><li><a class="tocitem" href="#Generate-Phantom"><span>Generate Phantom</span></a></li><li><a class="tocitem" href="#Generate-Kooshball-Spoke-Angles"><span>Generate Kooshball Spoke Angles</span></a></li><li><a class="tocitem" href="#Monte-Carlo-Simulation"><span>Monte Carlo Simulation</span></a></li><li><a class="tocitem" href="#Bland–Altman-Plot"><span>Bland–Altman Plot</span></a></li><li><a class="tocitem" href="#RMSE-Convergence"><span>RMSE Convergence</span></a></li></ul></li></ul></li><li><a class="tocitem" href="../../api/">API Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Monte Carlo Validation</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Monte Carlo Validation</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/SebastianFlassbeck/MRIRadialDelayEstimation.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/SebastianFlassbeck/MRIRadialDelayEstimation.jl/blob/master/docs/src/examples/monte_carlo_validation.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Monte-Carlo-Validation"><a class="docs-heading-anchor" href="#Monte-Carlo-Validation">Monte Carlo Validation</a><a id="Monte-Carlo-Validation-1"></a><a class="docs-heading-anchor-permalink" href="#Monte-Carlo-Validation" title="Permalink"></a></h1><p>This example reproduces the Monte Carlo simulation from the test suite and visualises the results with a Bland–Altman plot and an RMSE convergence plot.</p><h2 id="Setup"><a class="docs-heading-anchor" href="#Setup">Setup</a><a id="Setup-1"></a><a class="docs-heading-anchor-permalink" href="#Setup" title="Permalink"></a></h2><p>We simulate a 3D Shepp–Logan-like ellipsoid phantom, generate kooshball trajectories with known per-axis gradient delays, add noise, and then estimate the delays using <a href="../../api/#MRIRadialDelayEstimation.estimate_delay"><code>estimate_delay</code></a>.</p><pre><code class="language-julia hljs">using MRIRadialDelayEstimation
+using MRISubspaceRecon
+using ImagePhantoms
+using ImagePhantoms: phantom
+using NonuniformFFTs
+using LinearAlgebra
+using Random
+using Statistics
+using CairoMakie
+using Printf
+using LaTeXStrings
+using Unitful
+using Unitful: mm
+
+Random.seed!(1)</code></pre><h2 id="Imaging-Parameters"><a class="docs-heading-anchor" href="#Imaging-Parameters">Imaging Parameters</a><a id="Imaging-Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Imaging-Parameters" title="Permalink"></a></h2><pre><code class="language-julia hljs">T = Float32
+Tc = Complex{T}
+
+fovs = (256mm, 256mm, 256mm)
+nx, ny, nz = (256, 256, 256)
+dx, dy, dz = fovs ./ (nx, ny, nz)
+NSpokes = 10000
+x = (-(nx÷2):(nx÷2-1)) * dx
+y = (-(ny÷2):(ny÷2-1)) * dy
+z = (-(nz÷2):(nz÷2-1)) * dz
+Nr = 2 * nx</code></pre><h2 id="Generate-Phantom"><a class="docs-heading-anchor" href="#Generate-Phantom">Generate Phantom</a><a id="Generate-Phantom-1"></a><a class="docs-heading-anchor-permalink" href="#Generate-Phantom" title="Permalink"></a></h2><pre><code class="language-julia hljs">params = ellipsoid_parameters(; fovs)
+scale = Tc.(rand(length(params)))
+params = [(p[1:end-1]..., scale[i]) for (i, p) in enumerate(params)]
+ob = ellipsoid(params)
+image0 = phantom(x, y, z, ob, 3)</code></pre><h2 id="Generate-Kooshball-Spoke-Angles"><a class="docs-heading-anchor" href="#Generate-Kooshball-Spoke-Angles">Generate Kooshball Spoke Angles</a><a id="Generate-Kooshball-Spoke-Angles-1"></a><a class="docs-heading-anchor-permalink" href="#Generate-Kooshball-Spoke-Angles" title="Permalink"></a></h2><pre><code class="language-julia hljs">gm1, gm2 = MRISubspaceRecon.calculate_golden_means()
+theta = acos.(mod.((0:(NSpokes-1)) * gm1, 1))
+phi   = (0:(NSpokes-1)) * 2π * gm2
+theta[rand(length(theta)) .&gt; 0.5] .+= π</code></pre><h2 id="Monte-Carlo-Simulation"><a class="docs-heading-anchor" href="#Monte-Carlo-Simulation">Monte Carlo Simulation</a><a id="Monte-Carlo-Simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Monte-Carlo-Simulation" title="Permalink"></a></h2><pre><code class="language-julia hljs">SNR        = 20.0
+Ntrials    = 20
+Niter      = 20
+max_delay  = 2.5 / Nr
+threshold  = 0.5
+downsample = (32, 32, 32)
+
+signal_amplitude = maximum(abs.(image0))
+noise_sigma = sqrt(signal_amplitude / SNR * nx * ny * nz)
+
+nufft_plan = PlanNUFFT(Tc, (nx, ny, nz); fftshift=true)
+
+# Storage for results
+errors_all         = zeros(T, 3, Ntrials)
+true_delays_all    = zeros(T, 3, Ntrials)
+est_delays_all     = zeros(T, 3, Ntrials)
+est_delays_all_hist = zeros(T, 3, Niter, Ntrials)
+
+for itrial in 1:Ntrials
+    # Random true delay
+    true_delay = T.(max_delay .* (2 .* rand(3) .- 1))
+    true_delays_all[:, itrial] .= true_delay
+
+    # Simulate k-space data with the true delay
+    trj_true = T.(reshape(
+        traj_kooshball(Nr, reshape(theta,:,1), reshape(phi,:,1); delay=true_delay),
+        3, :))
+    set_points!(nufft_plan, NonuniformFFTs._transform_point_convention.(trj_true))
+
+    kdata = zeros(Tc, size(trj_true, 2))
+    NonuniformFFTs.exec_type2!(kdata, nufft_plan, image0)
+
+    # Add noise
+    noise = Tc(noise_sigma / sqrt(2)) .* randn(Tc, length(kdata))
+    kdata .+= noise
+
+    # Scale data
+    data = Tc.(reshape(kdata, :, 1, 1) .* T(1e-6))
+
+    # Estimate delay (with full iteration history)
+    delay, delay_history = estimate_delay(
+        data, theta, phi, Nr, (nx, ny, nz);
+        Niter, threshold, downsample, converge_tol=0.0,
+    )
+
+    est_delays_all[:, itrial] .= delay
+    errors_all[:, itrial] .= delay .- true_delay
+    est_delays_all_hist[:, :, itrial] .= delay_history[:, 1:Niter]
+end</code></pre><h2 id="Bland–Altman-Plot"><a class="docs-heading-anchor" href="#Bland–Altman-Plot">Bland–Altman Plot</a><a id="Bland–Altman-Plot-1"></a><a class="docs-heading-anchor-permalink" href="#Bland–Altman-Plot" title="Permalink"></a></h2><p>The Bland–Altman plot shows the estimation error versus the true delay for each gradient axis.  The shaded band marks the 2.5th–97.5th percentile limits of agreement.</p><pre><code class="language-julia hljs"># ─── Helpers ─────────────────────────────────────────────────────────────────
+const _sup = Dict(&#39;0&#39;=&gt;&#39;⁰&#39;,&#39;1&#39;=&gt;&#39;¹&#39;,&#39;2&#39;=&gt;&#39;²&#39;,&#39;3&#39;=&gt;&#39;³&#39;,&#39;4&#39;=&gt;&#39;⁴&#39;,
+                  &#39;5&#39;=&gt;&#39;⁵&#39;,&#39;6&#39;=&gt;&#39;⁶&#39;,&#39;7&#39;=&gt;&#39;⁷&#39;,&#39;8&#39;=&gt;&#39;⁸&#39;,&#39;9&#39;=&gt;&#39;⁹&#39;,&#39;-&#39;=&gt;&#39;⁻&#39;)
+superscript(n::Int) = join(_sup[c] for c in string(n))
+
+function sci_fmt_latex(v)
+    if v == 0
+        return &quot;0&quot;
+    else
+        exp  = floor(Int, log10(abs(v)))
+        coeff = v / 10.0^exp
+        return @sprintf(&quot;%.1f \\times 10^{%d}&quot;, coeff, exp)
+    end
+end
+
+function sci_tick_fmt(values)
+    map(values) do v
+        if v == 0
+            &quot;0&quot;
+        else
+            exp  = floor(Int, log10(abs(v)))
+            coeff = v / 10.0^exp
+            @sprintf(&quot;%g&quot;, coeff) * &quot;×10&quot; * superscript(exp)
+        end
+    end
+end
+
+# ─── Configuration ───────────────────────────────────────────────────────────
+font_scale = 1.5
+channels = 1:3
+colors   = [:dodgerblue, :crimson, :mediumseagreen]
+labels   = [L&quot;\textrm{x gradient axis}&quot;, L&quot;\textrm{y gradient axis}&quot;, L&quot;\textrm{z gradient axis}&quot;]
+markers  = [:circle, :utriangle, :diamond]
+
+# ─── Compute shared symmetric y-limits ───────────────────────────────────────
+global_ymax = 0.0
+for ch in channels
+    y = vec(errors_all[ch, :] .* Nr/2)
+    global global_ymax = max(global_ymax, maximum(abs.(y)))
+end
+global_ymax *= 1.05
+
+# ─── Figure ──────────────────────────────────────────────────────────────────
+fig = Figure(size = (1600, 500), fontsize = round(Int, 18 * font_scale))
+
+for (i, ch) in enumerate(channels)
+    x_vals = vec(true_delays_all[ch, :] .* Nr/2)
+    y_vals = vec(errors_all[ch, :] .* Nr/2)
+
+    median_diff = median(y_vals)
+    upper_loa   = quantile(y_vals, 0.975)
+    lower_loa   = quantile(y_vals, 0.025)
+
+    yl = i == 1 ? L&quot;\textrm{Estimation error ($\Delta k$)}&quot; : &quot;&quot;
+
+    ax = Axis(fig[1, i],
+        xlabel = L&quot;\textrm{Ground truth delay ($\Delta k$)}&quot;,
+        ylabel = yl,
+        title  = labels[ch],
+        ytickformat = sci_tick_fmt,
+        yticklabelsvisible = (i == 1),
+        yticksvisible = (i == 1),
+    )
+    Makie.ylims!(ax, -global_ymax, global_ymax)
+
+    Makie.scatter!(ax, x_vals, y_vals;
+        color       = (colors[ch], 0.55),
+        markersize  = 10,
+        marker      = markers[ch],
+        strokewidth = 0.5,
+        strokecolor = :gray30,
+    )
+
+    # Reference lines
+    x_lo, x_hi = extrema(x_vals)
+    x_pad = 0.05 * (x_hi - x_lo)
+    xspan = [x_lo - x_pad, x_hi + x_pad]
+
+    hlines!(ax, [median_diff]; color = :gray20, linewidth = 2, linestyle = :solid,
+        label = latexstring(&quot;\\textrm{Median} = &quot; * sci_fmt_latex(median_diff)))
+    hlines!(ax, [upper_loa]; color = :orange, linewidth = 1.8, linestyle = :dash,
+        label = latexstring(&quot;97.5^{\\textrm{th}}\\,\\textrm{pctl} = &quot; * sci_fmt_latex(upper_loa)))
+    hlines!(ax, [lower_loa]; color = :orange, linewidth = 1.8, linestyle = :dash,
+        label = latexstring(&quot;2.5^{\\textrm{th}}\\,\\textrm{pctl} = &quot; * sci_fmt_latex(lower_loa)))
+
+    # Shaded confidence band
+    band!(ax, xspan, fill(lower_loa, 2), fill(upper_loa, 2);
+        color = (:orange, 0.10))
+
+    # Annotations
+    offset = 0.02 * (x_hi - x_lo)
+    text!(ax, x_hi + x_pad - offset, median_diff;
+        text = &quot;Median&quot;, align = (:right, :bottom),
+        fontsize = round(Int, 12 * font_scale), color = :gray20)
+    text!(ax, x_hi + x_pad - offset, upper_loa;
+        text = &quot;97.5th&quot;, align = (:right, :bottom),
+        fontsize = round(Int, 12 * font_scale), color = :gray20)
+    text!(ax, x_hi + x_pad - offset, lower_loa;
+        text = &quot;2.5th&quot;, align = (:right, :top),
+        fontsize = round(Int, 12 * font_scale), color = :gray20)
+
+    axislegend(ax; position = :lt, framevisible = true, padding = (6, 6, 6, 6),
+        labelsize = round(Int, 14 * font_scale))
+    hidespines!(ax)
+end
+
+colgap!(fig.layout, 10)
+fig</code></pre><img src="fec43d97.png" alt="Example block output"/><h2 id="RMSE-Convergence"><a class="docs-heading-anchor" href="#RMSE-Convergence">RMSE Convergence</a><a id="RMSE-Convergence-1"></a><a class="docs-heading-anchor-permalink" href="#RMSE-Convergence" title="Permalink"></a></h2><p>The box plot below shows the root-mean-square error (across the three gradient axes) at each iteration of the delay estimation algorithm, demonstrating rapid convergence within a few iterations.</p><pre><code class="language-julia hljs"># ─── Compute RMSE per iteration ─────────────────────────────────────────────
+errors_hist = est_delays_all_hist .- reshape(true_delays_all, 3, 1, :)
+n_channels, n_iters, n_samples = size(errors_hist)
+
+errors_scaled = errors_hist .* Nr / 2
+
+rmse_per_iter = zeros(n_iters, n_samples)
+for it in 1:n_iters
+    for s in 1:n_samples
+        rmse_per_iter[it, s] = sqrt(mean(errors_scaled[:, it, s] .^ 2))
+    end
+end
+
+# ─── Plot ────────────────────────────────────────────────────────────────────
+fig2 = Figure(size = (600, 600), fontsize = 20)
+
+ax2 = Axis(fig2[1, 1],
+    xlabel = L&quot;\textrm{Iteration}&quot;,
+    ylabel = L&quot;\textrm{k-shift RMSE ($\Delta k$)}&quot;,
+    yscale = log10,
+    xticks = 0:5:n_iters,
+)
+
+positions = Int[]
+values    = Float64[]
+for it in 1:n_iters
+    append!(positions, fill(it, n_samples))
+    append!(values, rmse_per_iter[it, :])
+end
+
+Makie.boxplot!(ax2, positions, values;
+    width           = 0.5,
+    whiskerwidth    = 0.3,
+    gap             = 0.1,
+    color           = (:dodgerblue, 0.6),
+    strokecolor     = :gray30,
+    strokewidth     = 0.8,
+    mediancolor     = :gray10,
+    medianlinewidth = 2,
+    outliercolor    = (:dodgerblue, 0.3),
+    outlierstrokewidth = 0,
+)
+
+hidespines!(ax2)
+fig2</code></pre><img src="957a6294.png" alt="Example block output"/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../../api/">API Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Wednesday 6 May 2026 15:39">Wednesday 6 May 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
