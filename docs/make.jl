@@ -19,6 +19,9 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
+        "Examples" => [
+            "Monte Carlo Validation" => "examples/monte_carlo_validation.md",
+        ],
         "API Reference" => "api.md",
     ],
 )
