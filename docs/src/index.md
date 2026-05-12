@@ -1,6 +1,6 @@
 # MRIRadialDelayEstimation.jl
 
-Estimate and correct gradient delays in 3D radial (kooshball) MRI k-space trajectories.
+Estimate and correct gradient delays in 2D radial and 3D radial (kooshball) MRI k-space trajectories.
 
 ## Overview
 
@@ -19,8 +19,11 @@ The algorithm works by:
 ```julia
 using MRIRadialDelayEstimation
 
-# If you have spoke angles (theta, phi):
-delay, delay_history = estimate_delay(data, theta, phi, Nr, img_shape)
+# 3D radial (kooshball) — if you have spoke angles (theta, phi):
+delay, delay_history = estimate_delay(data, theta, phi, Nr, (256, 256, 256))
+
+# 2D radial — if you have spoke angles (phi only):
+delay, delay_history = estimate_delay(data, phi, Nr, (256, 256))
 
 # If you have a trajectory array directly:
 trj_corrected = correct_trajectory(data, trj, img_shape; Nr=Nr)

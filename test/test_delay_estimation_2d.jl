@@ -7,12 +7,11 @@ using ImagePhantoms
 using ImagePhantoms: phantom
 using NonuniformFFTs
 using MRISubspaceRecon
-using MRIRadialDelayEstimation
 
 using Unitful
 using Unitful: mm
 
-@testset "delay estimation (Monte Carlo)" begin
+@testset "delay estimation 2D (Monte Carlo)" begin
 
     Random.seed!(1234)
 
@@ -22,31 +21,29 @@ using Unitful: mm
     T = Float32
     Tc = Complex{T}
 
-    fovs = (256mm, 256mm, 256mm)
-    nx, ny, nz = (256, 256, 256)
-    dx, dy, dz = fovs ./ (nx, ny, nz)
-    NSpokes = 10000
+    fovs = (256mm, 256mm)
+    nx, ny = (256, 256)
+    dx, dy = fovs ./ (nx, ny)
+    NSpokes = 500
     x = (-(nx÷2):(nx÷2-1)) * dx
     y = (-(ny÷2):(ny÷2-1)) * dy
-    z = (-(nz÷2):(nz÷2-1)) * dz
 
     ############################
-    # Generate phantom
+    # Generate 2D phantom
     ############################
-    params = ellipsoid_parameters(; fovs)
+    params = ellipse_parameters(; fovs)
     scale = Tc.(rand(length(params)))
     params = [(p[1:end-1]..., scale[i]) for (i, p) in enumerate(params)]
-    ob = ellipsoid(params)
-    image0 = phantom(x, y, z, ob, 3)
+    ob = ellipse(params)
+    image0 = phantom(x, y, ob, 2)
 
     ############################
-    # Generate kooshball spoke angles
+    # Generate 2D radial spoke angles (golden angle)
     ############################
     Nr = 2 * nx
-    gm1, gm2 = MRISubspaceRecon.calculate_golden_means()
-    theta = acos.(mod.((0:(NSpokes-1)) * gm1, 1))
-    phi   = (0:(NSpokes-1)) * 2π * gm2
-    theta[rand(length(theta)) .> 0.5] .+= π
+    τ = (sqrt(5) + 1) / 2
+    angle_GR = T(π / τ)
+    phi = (0:(NSpokes-1)) .* angle_GR
 
     ############################
     # Test parameters
@@ -56,26 +53,26 @@ using Unitful: mm
     Niter     = 20
     max_delay = 2.5 / Nr
     threshold = 0.5
-    downsample = (32, 32, 32)
-    img_shape  = ntuple(_ -> maximum((nx, ny, nz)), 3)
+    downsample = (32, 32)
+    img_shape  = ntuple(_ -> maximum((nx, ny)), 2)
     error_tol  = 1e-4
 
     signal_amplitude = maximum(abs.(image0))
-    noise_sigma = sqrt(signal_amplitude / SNR * nx * ny * nz)
+    noise_sigma = sqrt(signal_amplitude / SNR * nx * ny)
 
-    nufft_plan = PlanNUFFT(Tc, (nx, ny, nz); fftshift=true)
+    nufft_plan = PlanNUFFT(Tc, (nx, ny); fftshift=true)
 
     ############################
     # Monte Carlo loop
     ############################
-    errors_all = zeros(T, 3, Ntrials)
+    errors_all = zeros(T, 2, Ntrials)
 
     for itrial in 1:Ntrials
         # Random true delay
-        true_delay = T.(max_delay .* (2 .* rand(3) .- 1))
+        true_delay = T.(max_delay .* (2 .* rand(2) .- 1))
 
         # Simulate k-space data with the true delay
-        trj_true = T.(reshape(traj_kooshball(Nr, reshape(theta,:,1), reshape(phi,:,1); delay=true_delay), 3, :))
+        trj_true = T.(reshape(traj_2D_radial(Nr, reshape(phi, :, 1), true_delay), 2, :))
         set_points!(nufft_plan, NonuniformFFTs._transform_point_convention.(trj_true))
 
         kdata = zeros(Tc, size(trj_true, 2))
@@ -90,7 +87,7 @@ using Unitful: mm
 
         # Estimate delay
         delay, _ = estimate_delay(
-            data, theta, phi, Nr, (nx, ny, nz);
+            data, phi, Nr, (nx, ny);
             Niter, threshold, downsample, converge_tol=0.0,
         )
 
@@ -100,7 +97,7 @@ using Unitful: mm
     rmse = sqrt.(mean(errors_all .^ 2; dims=2))
 
     @testset "RMSE per axis below tolerance" begin
-        for (idir, label) in enumerate(["x", "y", "z"])
+        for (idir, label) in enumerate(["x", "y"])
             @test rmse[idir] < error_tol
         end
     end

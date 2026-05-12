@@ -11,12 +11,8 @@ correct_trajectory
 
 ```@docs
 decompose_kooshball
-```
-
-## Reconstruction
-
-```@docs
-reconstruct_cg
+decompose_radial2d
+traj_2d_radial
 ```
 
 ## Device Helpers

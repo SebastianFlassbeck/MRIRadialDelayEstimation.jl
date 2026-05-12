@@ -96,3 +96,19 @@ function reconstruct_cg(
     return reshape(x,img_shape...)
 
 end
+
+
+function traj_3D_radial(Nr, theta, phi, delay)
+    theta = reshape(theta, :, 1)
+    phi   = reshape(phi,   :, 1)
+    trj = traj_kooshball(Nr, theta, phi; delay)
+    return trj
+end
+
+function traj_2D_radial(Nr, phi, _delay)
+    phi   = reshape(phi,   :, 1)
+    theta = similar(phi)
+    theta .= π/2
+    trj = traj_kooshball(Nr, theta, phi; delay=[_delay[1],_delay[2], 0])
+    return trj[1:2, ntuple(_ -> :, ndims(trj) - 1)...]
+end
