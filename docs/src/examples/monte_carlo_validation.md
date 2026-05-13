@@ -169,7 +169,7 @@ for ch in channels
     y = vec(errors_all[ch, :] .* Nr/2)
     global global_ymax = max(global_ymax, maximum(abs.(y)))
 end
-global_ymax *= 1.05
+global_ymax = global_ymax == 0 ? 1.0 : global_ymax * 1.05
 
 # ─── Figure ──────────────────────────────────────────────────────────────────
 fig = Figure(size = (1600, 500), fontsize = round(Int, 18 * font_scale))

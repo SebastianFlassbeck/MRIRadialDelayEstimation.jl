@@ -11,12 +11,14 @@ correct_trajectory
 
 ```@docs
 decompose_kooshball
+decompose_radial2d
+traj_2d_radial
 ```
 
 ## Reconstruction
 
 ```@docs
-reconstruct_cg
+MRIRadialDelayEstimation.reconstruct_cg
 ```
 
 ## Device Helpers

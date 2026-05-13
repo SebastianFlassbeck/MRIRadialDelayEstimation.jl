@@ -1,7 +1,7 @@
 """
-    estimate_delay(data, theta, phi, Nr, img_shape; kwargs...) -> (delay, delay_history)
+    estimate_delay(data, phi, Nr, img_shape::NTuple{2}; kwargs...) -> (delay, delay_history)
 
-Estimate gradient delay from 3D radial (kooshball) k-space data by iteratively
+Estimate gradient delay from 2D radial k-space data by iteratively
 splitting spokes into positive/negative half-sets along each axis, reconstructing
 each half on a coarse grid using CG, and fitting the resulting linear phase difference.
 
@@ -10,22 +10,21 @@ each half on a coarse grid using CG, and fitting the resulting linear phase diff
   Accepted shapes:
   - `(samples,)` — single coil
   - `(samples, Ncoil)` — multi-coil
-- `theta::AbstractVector`: polar angles of the spokes (length `NSpokes`).
 - `phi::AbstractVector`: azimuthal angles of the spokes (length `NSpokes`).
 - `Nr::Integer`: number of readout points per spoke.
-- `img_shape::NTuple{3,Integer}`: reconstruction matrix size, e.g. `(256, 256, 256)`.
+- `img_shape::NTuple{2,Integer}`: reconstruction matrix size, e.g. `(256, 256)`.
 
 # Keyword Arguments
-- `delay_init`: initial delay estimate, length-3 vector. Default `zeros(T, 3)`
+- `delay_init`: initial delay estimate, length-2 vector. Default `zeros(T, 2)`
   where `T = real(eltype(data))`.
-- `Niter`: number of outer iterations (each iteration loops over 3 axes).
+- `Niter`: number of outer iterations (each iteration loops over 2 axes).
   Default `10`.
 - `Niter_cg`: maximum CG iterations per reconstruction. Default `100`.
 - `threshold`: relative threshold (fraction of the 90th percentile) used to
   build the spatial mask for the linear fit. Default `0.5`.
 - `converge_tol`: early-stopping tolerance on the maximum absolute delay
   change per iteration.  Default `1e-2 / Nr`.
-- `downsample`: coarse reconstruction grid size. Default `(32, 32, 32)`.
+- `downsample`: coarse reconstruction grid size. Default `(64, 64)`.
 - `cmaps`: coil sensitivity maps.  Pass `nothing` (default) to auto-estimate
   them via `calculate_coil_maps` when multi-coil data is detected.  Pass a
   `Vector{<:AbstractArray}` of length `Ncoil`, where each element has size
@@ -38,34 +37,33 @@ each half on a coarse grid using CG, and fitting the resulting linear phase diff
 - `verbose::Bool`: print per-iteration delay estimates. Default `false`.
 
 # Returns
-- `delay::Vector{T}`: estimated delay per axis (length 3), in the same units
-  as the trajectory produced by `traj_kooshball`.
+- `delay::Vector{T}`: estimated delay per axis (length 2), in the same units
+  as the trajectory produced by `traj_2d_radial`.
 - `delay_history::Matrix{T}`: delay estimates at each iteration, size
-  `(3, Niter)`.
+  `(2, Niter)`.
 
 # Example
 ```julia
 using CUDA, MRIRadialDelayEstimation
 
 # CPU
-delay, hist = estimate_delay(data, theta, phi, Nr, img_shape)
+delay, hist = estimate_delay(data, phi, Nr, img_shape)
 
 # GPU — transfer data before calling
-delay, hist = estimate_delay(cu(data), theta, phi, Nr, img_shape; device=cu)
+delay, hist = estimate_delay(cu(data), phi, Nr, img_shape; device=cu)
 ```
 """
 function estimate_delay(
     data::AbstractArray{<:Complex},
-    theta::AbstractVector,
     phi::AbstractVector,
     Nr::Integer,
-    img_shape::NTuple{3,<:Integer};
-    delay_init::AbstractVector{<:Real} = zeros(real(eltype(data)), 3),
+    img_shape::NTuple{2,<:Integer};
+    delay_init::AbstractVector{<:Real} = zeros(real(eltype(data)), 2),
     Niter::Integer = 10,
     Niter_cg::Integer = 100,
     threshold::Real = 0.5,
     converge_tol = 1e-2 / Nr,
-    downsample::NTuple{3,<:Integer} = (32, 32, 32),
+    downsample::NTuple{2,<:Integer} = (64, 64),
     cmaps = nothing,
     device = identity,
     verbose::Bool = false
@@ -73,20 +71,24 @@ function estimate_delay(
     T = real(eltype(data))
 
     # Make img_shape isotropic
-    img_shape_iso = ntuple(_ -> maximum(img_shape), 3)
+    img_shape_iso = ntuple(_ -> maximum(img_shape), 2)
+
     # Determine single vs multi-coil
-    is_singlecoil = ndims(data) == 1 || (ndims(data) == 2 && size(data,2) == 1)
+    is_singlecoil = ndims(data) == 1 || (ndims(data) == 2 && size(data, 2) == 1)
     Ncoil = !is_singlecoil ? size(data)[end] : 1
+
+    # traj_2d_radial expects column vector (NSpokes, 1)
+    phi = reshape(vec(phi), :, 1)
 
     # Estimate coil maps on the downsampled grid if multi-coil and not provided
     if is_singlecoil
-        cmaps=(1,)
+        cmaps = (1,)
     elseif !is_singlecoil && cmaps === nothing
-        trj = T.(traj_3D_radial(Nr, theta, phi, delay_init))
-        trj = reshape(trj, 3, :, 1)
-        trj = reshape(trj .* T.(img_shape_iso ./ downsample), 3, :, 1)
+        trj = traj_2D_radial(Nr, phi, delay_init)
+        trj = reshape(trj, 2, :, 1)
+        trj = reshape(trj .* T.(img_shape_iso ./ downsample), 2, :, 1)
         sample_mask = reshape(vec(all(abs.(trj) .< 0.5; dims=1)), :, 1)
-        cmaps = calculate_coil_maps(reshape(data,:,1,Ncoil), device(trj), downsample; sample_mask=device(BitMatrix(sample_mask)), verbose)
+        cmaps = calculate_coil_maps(reshape(data, :, 1, Ncoil), device(trj), downsample; sample_mask=device(BitMatrix(sample_mask)), verbose)
 
         verbose && println("  Estimated coil maps ($(length(cmaps)) coils)")
     else
@@ -105,20 +107,20 @@ function estimate_delay(
 
     # Initialise delay and history
     delay = T.(copy(delay_init))
-    delay_history = zeros(T, 3, Niter)
+    delay_history = zeros(T, 2, Niter)
 
     for iq in 1:Niter
         delay_prev = copy(delay)
 
-        for idir in 1:3
-            # Build trajectory with current delay estimate (CPU — cheap)
-            trj = T.(traj_3D_radial(Nr, theta, phi, delay))
+        for idir in 1:2
+            # Build trajectory with current delay estimate
+            trj = T.(traj_2D_radial(Nr, phi, delay))
 
             # Split spokes based on trajectory direction along current axis
             split_trj = trj[idir, 1, :] .> 0
 
             # Scale trajectory for downsampled grid and compute calibration mask
-            trj_calib = reshape(trj .* T.(img_shape_iso ./ downsample), 3, :)
+            trj_calib = reshape(trj .* T.(img_shape_iso ./ downsample), 2, :)
             mask_calib = vec(all(abs.(trj_calib) .< 0.5; dims=1))
 
             split_trj_rep = vec(repeat(split_trj, inner=Nr))
@@ -149,26 +151,24 @@ function estimate_delay(
             combined = recon_phalf .+ recon_nhalf
             mask_ds = abs.(combined) .> threshold * quantile(vec(abs.(combined)), 0.9)
             mask_ds = opening(mask_ds, strel_box(mask_ds, r=1))
-            
-            (Xds, Yds, Zds) = ndgrid(
+
+            (Xds, Yds) = ndgrid(
                 range(-0.5, 0.5, downsample[1]),
                 range(-0.5, 0.5, downsample[2]),
-                range(-0.5, 0.5, downsample[3]),
             )
 
-               Pos_ds = cat(dims=2,
+            Pos_ds = cat(dims=2,
                 ones(eltype(Xds), length(Xds[mask_ds])),
                 Xds[mask_ds],
                 Yds[mask_ds],
-                Zds[mask_ds],
             )
 
-            # Linear least-squares fit: phase = [1, x, y, z] * p
+            # Linear least-squares fit: phase = [1, x, y] * p
             p_fit = Pos_ds \ pd[mask_ds]
 
             # Update delay along the current axis
-            Δk_cart = p_fit[idir + 1]/(4π) # 2π from Fourier transform and factor 2 because we need to shift each hemisphere by half
-            Δk_rad = Δk_cart/img_shape_iso[1]
+            Δk_cart = p_fit[idir + 1] / (4π) # 2π from Fourier transform and factor 2 because we need to shift each hemisphere by half
+            Δk_rad = Δk_cart / img_shape_iso[1]
             delay[idir] += Δk_rad
             delay_history[idir, iq] = delay[idir]
 
@@ -192,16 +192,16 @@ function estimate_delay(
 end
 
 """
-    correct_trajectory(data, trj, img_shape; Nr, kwargs...) -> trj_corrected
+    correct_trajectory(data, trj, img_shape::NTuple{2}; Nr, kwargs...) -> trj_corrected
 
-Estimate and correct gradient delays for a 3D radial (kooshball) trajectory.
+Estimate and correct gradient delays for a 2D radial trajectory.
 
 This is a convenience wrapper around [`estimate_delay`](@ref) that:
-1. Decomposes `trj` into spoke angles via [`decompose_kooshball`](@ref).
+1. Decomposes `trj` into spoke angles via [`decompose_radial2d`](@ref).
 2. Estimates the gradient delay.
 3. Returns a corrected trajectory with the estimated delay applied.
 
-The input trajectory must have been generated with `delay = [0, 0, 0]`;
+The input trajectory must have been generated with `delay = [0, 0]`;
 angles are recovered under that assumption.
 
 `data` must already reside on the target device (CPU or GPU).  All keyword
@@ -210,14 +210,14 @@ arguments (except `Nr`) are forwarded to [`estimate_delay`](@ref).
 # Arguments
 - `data`: k-space data, already on the target device.
 - `trj`: trajectory array of arbitrary shape, provided the first dimension
-  is 3 (spatial axes) and the total number of elements is `3 * Nr * NSpokes`.
-  Common shapes include `(3, Nr*NSpokes)`, `(3, Nr, NSpokes)`, or higher-dimensional
+  is 2 (spatial axes) and the total number of elements is `2 * Nr * NSpokes`.
+  Common shapes include `(2, Nr*NSpokes)`, `(2, Nr, NSpokes)`, or higher-dimensional
   layouts.  The returned trajectory will have exactly the same shape.
-- `img_shape::NTuple{3,Integer}`: reconstruction matrix size.
+- `img_shape::NTuple{2,Integer}`: reconstruction matrix size.
 
 # Keyword Arguments
 - `Nr::Integer`: number of readout points per spoke.  Required when `trj` is
-  `(3, Nr*NSpokes)`; inferred from `size(trj, 2)` when `trj` is 3D.
+  `(2, Nr*NSpokes)`; inferred from `size(trj, 2)` when `trj` is 3D.
 - All other kwargs are forwarded to `estimate_delay`.
 
 # Returns
@@ -234,14 +234,14 @@ trj_corrected = correct_trajectory(cu(data), trj, img_shape; Nr=Nr, device=cu)
 function correct_trajectory(
     data::AbstractArray{<:Complex},
     trj::AbstractArray{<:Real},
-    img_shape::NTuple{3,<:Integer};
+    img_shape::NTuple{2,<:Integer};
     Nr::Integer = size(trj, 2),
     kwargs...,
 )
     original_shape = size(trj)
-    theta, phi = decompose_kooshball(trj, Nr)
-    delay, _ = estimate_delay(data, theta, phi, Nr, img_shape; kwargs...)
-    # traj_kooshball expects column matrices (NSpokes, 1)
-    trj_corrected = traj_kooshball(Nr, reshape(theta,:,1), reshape(phi,:,1); delay)
+    phi = decompose_radial2d(trj, Nr)
+    delay, _ = estimate_delay(data, phi, Nr, img_shape; kwargs...)
+    # traj_2d_radial expects column matrix (NSpokes, 1)
+    trj_corrected = traj_2d_radial(Nr, reshape(phi, :, 1); delay)
     return reshape(trj_corrected, original_shape)
 end
