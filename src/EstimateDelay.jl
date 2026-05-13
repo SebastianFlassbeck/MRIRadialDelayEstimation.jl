@@ -82,7 +82,7 @@ function estimate_delay(
     if is_singlecoil
         cmaps=(1,)
     elseif !is_singlecoil && cmaps === nothing
-        trj = traj_3D_radial(Nr, theta, phi, delay_init) 
+        trj = T.(traj_3D_radial(Nr, theta, phi, delay_init))
         trj = reshape(trj, 3, :, 1)
         trj = reshape(trj .* T.(img_shape_iso ./ downsample), 3, :, 1)
         sample_mask = reshape(vec(all(abs.(trj) .< 0.5; dims=1)), :, 1)
