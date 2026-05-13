@@ -72,7 +72,7 @@ using Unitful: mm
         true_delay = T.(max_delay .* (2 .* rand(2) .- 1))
 
         # Simulate k-space data with the true delay
-        trj_true = T.(reshape(traj_2D_radial(Nr, reshape(phi, :, 1), true_delay), 2, :))
+        trj_true = T.(reshape(MRIRadialDelayEstimation.traj_2D_radial(Nr, reshape(phi, :, 1), true_delay), 2, :))
         set_points!(nufft_plan, NonuniformFFTs._transform_point_convention.(trj_true))
 
         kdata = zeros(Tc, size(trj_true, 2))

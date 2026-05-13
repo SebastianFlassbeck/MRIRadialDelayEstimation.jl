@@ -7,7 +7,6 @@ using ImagePhantoms
 using ImagePhantoms: phantom
 using NonuniformFFTs
 using MRISubspaceRecon
-using MRIRadialDelayEstimation
 
 using Unitful
 using Unitful: mm
@@ -75,7 +74,7 @@ using Unitful: mm
         true_delay = T.(max_delay .* (2 .* rand(3) .- 1))
 
         # Simulate k-space data with the true delay
-        trj_true = T.(reshape(traj_kooshball(Nr, reshape(theta,:,1), reshape(phi,:,1); delay=true_delay), 3, :))
+        trj_true = T.(reshape(MRIRadialDelayEstimation.traj_3D_radial(Nr, theta, phi, true_delay), 3, :))
         set_points!(nufft_plan, NonuniformFFTs._transform_point_convention.(trj_true))
 
         kdata = zeros(Tc, size(trj_true, 2))
