@@ -3,15 +3,14 @@
 [![CI](https://github.com/SebastianFlassbeck/MRIRadialDelayEstimation.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/SebastianFlassbeck/MRIRadialDelayEstimation.jl/actions/workflows/CI.yml)
 [![Docs (dev)](https://img.shields.io/badge/docs-dev-blue.svg)](https://SebastianFlassbeck.github.io/MRIRadialDelayEstimation.jl/dev/)
 
-Estimate and correct gradient delays in 3D radial (kooshball) MRI k-space
-trajectories directly from the acquired data.
+Estimate and gradient delays in 2D and 3D radial MRI.
 
 ## Background
 
 Gradient delays in MRI cause a mismatch between the assumed and actual k-space
 trajectories, leading to image artefacts such as streaking and signal loss.
 This package implements an iterative, data-driven algorithm that estimates
-per-axis gradient delays for 3D radial (kooshball) acquisitions and returns a
+per-axis gradient delays for 2D and 3D radial acquisitions and returns a
 corrected trajectory.
 
 The algorithm works by:
@@ -34,29 +33,40 @@ Pkg.add(url="https://github.com/SebastianFlassbeck/MRIRadialDelayEstimation.jl")
 
 ### Correct a trajectory in one call
 
-If you have a trajectory array `trj` (shape `(3, Nr*NSpokes)` or
-`(3, Nr, NSpokes)`) generated with zero delay:
+If you have a trajectory array `trj` generated with zero delay
+(shape `(3, Nr*NSpokes)` or `(3, Nr, NSpokes)` for 3D;
+`(2, Nr*NSpokes)` or `(2, Nr, NSpokes)` for 2D):
 
 ```julia
 using MRIRadialDelayEstimation
 
+# 3D
 trj_corrected = correct_trajectory(data, trj, img_shape; Nr=Nr)
+
+# 2D — img_shape is a 2-tuple, e.g. (256, 256)
+trj_corrected = correct_trajectory(data, trj_2d, img_shape_2d; Nr=Nr)
 ```
 
 The corrected trajectory has exactly the same shape as the input.
 
 ### Estimate delays from spoke angles
 
-If you already have the spoke angles `theta` and `phi`:
-
 ```julia
+# 3D — from polar (theta) and azimuthal (phi) angles
 delay, delay_history = estimate_delay(data, theta, phi, Nr, img_shape)
+
+# 2D — from azimuthal (phi) angles only
+delay, delay_history = estimate_delay(data, phi, Nr, img_shape_2d)
 ```
 
 ### Decompose a trajectory into spoke angles
 
 ```julia
+# 3D
 theta, phi = decompose_kooshball(trj, Nr)
+
+# 2D
+phi = decompose_radial2d(trj, Nr)
 ```
 
 ## GPU Acceleration
@@ -94,10 +104,13 @@ delay, _ = estimate_delay(data_multicoil, theta, phi, Nr, img_shape;
 
 | Function | Description |
 |---|---|
-| `correct_trajectory(data, trj, img_shape; Nr, ...)` | Estimate delays and return a corrected trajectory |
-| `estimate_delay(data, theta, phi, Nr, img_shape; ...)` | Estimate per-axis gradient delays |
-| `decompose_kooshball(trj, Nr)` | Recover spoke angles `(theta, phi)` from a kooshball trajectory |
-| `reconstruct_cg(data, trj, img_shape; ...)` | CG-SENSE reconstruction from non-Cartesian data |
+| `correct_trajectory(data, trj, img_shape; Nr, ...)` | Estimate delays and return a corrected trajectory (2D or 3D) |
+| `estimate_delay(data, theta, phi, Nr, img_shape; ...)` | Estimate per-axis gradient delays (3D) |
+| `estimate_delay(data, phi, Nr, img_shape; ...)` | Estimate per-axis gradient delays (2D) |
+| `decompose_kooshball(trj, Nr)` | Recover spoke angles `(theta, phi)` from a 3D kooshball trajectory |
+| `decompose_radial2d(trj, Nr)` | Recover spoke angles `phi` from a 2D radial trajectory |
+| `traj_2d_radial(Nr, phi; delay=(0, 0))` | Generate a 2D radial trajectory from spoke angles |
+
 
 See the [documentation](https://SebastianFlassbeck.github.io/MRIRadialDelayEstimation.jl/dev/)
 for full API details and keyword arguments.
@@ -106,9 +119,9 @@ for full API details and keyword arguments.
 
 | Keyword | Default | Description |
 |---|---|---|
-| `Niter` | `10` | Number of outer iterations (each loops over 3 axes) |
+| `Niter` | `10` | Number of outer iterations (each loops over all axes) |
 | `Niter_cg` | `100` | Max CG iterations per reconstruction |
-| `downsample` | `(32,32,32)` | Coarse reconstruction grid size |
+| `downsample` | `(32,32,32)` 3D / `(64,64)` 2D | Coarse reconstruction grid size |
 | `threshold` | `0.5` | Relative mask threshold for the phase fit |
 | `converge_tol` | `1e-2/Nr` | Early-stopping tolerance on delay change |
 | `device` | `identity` | Device transfer function (`identity` for CPU, `cu` for GPU) |
