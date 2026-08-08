@@ -93,9 +93,7 @@ for itrial in 1:Ntrials
     true_delays_all[:, itrial] .= true_delay
 
     # Simulate k-space data with the true delay
-    trj_true = T.(reshape(
-        traj_kooshball(Nr, reshape(theta,:,1), reshape(phi,:,1); delay=true_delay),
-        3, :))
+    trj_true = T.(reshape(MRIRadialDelayEstimation.traj_3D_radial(Nr, theta, phi, true_delay), 3, :))
     set_points!(nufft_plan, NonuniformFFTs._transform_point_convention.(trj_true))
 
     kdata = zeros(Tc, size(trj_true, 2))
@@ -106,8 +104,7 @@ for itrial in 1:Ntrials
     kdata .+= noise
 
     # Scale data
-    data = Tc.(reshape(kdata, :, 1, 1) .* T(1e-6))
-
+    data = Tc.(kdata .* 1e-6)
     # Estimate delay (with full iteration history)
     delay, delay_history = estimate_delay(
         data, theta, phi, Nr, (nx, ny, nz);
