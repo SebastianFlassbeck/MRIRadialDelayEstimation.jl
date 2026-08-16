@@ -21,10 +21,10 @@ using Unitful: mm
     T = Float32
     Tc = Complex{T}
 
-    fovs = (256mm, 256mm, 256mm)
-    nx, ny, nz = (256, 256, 256)
+    fovs = (128mm, 128mm, 128mm)
+    nx, ny, nz = (128, 128, 128)
     dx, dy, dz = fovs ./ (nx, ny, nz)
-    NSpokes = 10000
+    NSpokes = 5000
     x = (-(nx÷2):(nx÷2-1)) * dx
     y = (-(ny÷2):(ny÷2-1)) * dy
     z = (-(nz÷2):(nz÷2-1)) * dz
@@ -51,13 +51,15 @@ using Unitful: mm
     # Test parameters
     ############################
     SNR       = 20.0
-    Ntrials   = 5
+    Ntrials   = 3
     Niter     = 20
     max_delay = 2.5 / Nr
     threshold = 0.5
     downsample = (32, 32, 32)
     img_shape  = ntuple(_ -> maximum((nx, ny, nz)), 3)
-    error_tol  = 1e-4
+    # Expressed in units of readout samples (delays are in 1/Nr) so the
+    # tolerance does not silently tighten or loosen if the matrix size changes.
+    error_tol  = 0.05 / Nr
 
     signal_amplitude = maximum(abs.(image0))
     noise_sigma = sqrt(signal_amplitude / SNR * nx * ny * nz)

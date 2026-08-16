@@ -14,7 +14,7 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 ImageMorphology = "0.4"
 IterativeSolvers = "0.9"
 LazyGrids = "1"
-MRISubspaceRecon = "0.9"
+MRISubspaceRecon = "0.10"
 julia = "1.11"
 
 [extras]

@@ -3,10 +3,11 @@
 
 Generate a 2D radial trajectory from spoke angles `phi`.
 
-The trajectory convention follows:
+The trajectory follows the standard polar-coordinate convention, which is the
+2D case of `MRISubspaceRecon.traj_kooshball` at `theta = π/2`:
 ```
-k[1, ir, ic] = -cos(φ) * (kr[ir] + delay[1])
-k[2, ir, ic] =  sin(φ) * (kr[ir] + delay[2])
+k[1, ir, ic] = cos(φ) * (kr[ir] + delay[1])
+k[2, ir, ic] = sin(φ) * (kr[ir] + delay[2])
 ```
 
 This is equivalent to calling `traj_kooshball` with `theta = π/2` and
@@ -37,8 +38,8 @@ function traj_2d_radial(Nr::Integer, phi::AbstractMatrix; delay=(0, 0))
         ki = Array{T_el,3}(undef, 2, Nr, Ncyc)
         Threads.@threads for ic in 1:Ncyc
             for ir in 1:Nr
-                ki[1, ir, ic] = -cphi[ic, it] * (kr[ir] + delay[1])
-                ki[2, ir, ic] =  sphi[ic, it] * (kr[ir] + delay[2])
+                ki[1, ir, ic] = cphi[ic, it] * (kr[ir] + delay[1])
+                ki[2, ir, ic] = sphi[ic, it] * (kr[ir] + delay[2])
             end
         end
         k[:, :, it] = reshape(ki, 2, :)
@@ -54,10 +55,10 @@ end
 Recover the spoke angles `phi` from a 2D radial trajectory that was
 generated with `delay = [0, 0]`.
 
-The trajectory is assumed to follow the convention:
+The trajectory is assumed to follow the polar-coordinate convention:
 ```
-k[1, ir, ic] = -cos(φ) * kr[ir]
-k[2, ir, ic] =  sin(φ) * kr[ir]
+k[1, ir, ic] = cos(φ) * kr[ir]
+k[2, ir, ic] = sin(φ) * kr[ir]
 ```
 
 # Arguments
@@ -66,7 +67,7 @@ k[2, ir, ic] =  sin(φ) * kr[ir]
 - `Nr`: number of readout points per spoke.
 
 # Returns
-- `phi::Vector`: azimuthal angle per spoke (length `NSpokes`).
+- `phi::Vector`: azimuthal angle per spoke (length `NSpokes`), in `(-π, π]`.
 """
 function decompose_radial2d(trj::AbstractArray{<:Real}, Nr::Integer)
     # Reshape to (2, Nr, NSpokes) if needed
@@ -85,12 +86,12 @@ function decompose_radial2d(trj::AbstractArray{<:Real}, Nr::Integer)
     phi = Vector{eltype(trj)}(undef, NSpokes)
 
     for ic in 1:NSpokes
-        # Fit slopes: k[1,:,ic] = -cos(φ) * kr, k[2,:,ic] = sin(φ) * kr
-        a = kr \ @view(trj[1, :, ic])   # -cos(φ)
+        # Fit slopes: k[1,:,ic] = cos(φ) * kr, k[2,:,ic] = sin(φ) * kr
+        a = kr \ @view(trj[1, :, ic])   #  cos(φ)
         b = kr \ @view(trj[2, :, ic])   #  sin(φ)
 
-        # φ from atan2(sin(φ), cos(φ)) = atan2(b, -a)
-        phi[ic] = atan(b, -a)
+        # φ from atan2(sin(φ), cos(φ)) = atan2(b, a)
+        phi[ic] = atan(b, a)
     end
 
     return phi

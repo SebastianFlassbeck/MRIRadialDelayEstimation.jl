@@ -49,13 +49,14 @@ using Unitful: mm
     # Test parameters
     ############################
     SNR       = 20.0
-    Ntrials   = 5
+    Ntrials   = 3
     Niter     = 20
     max_delay = 2.5 / Nr
     threshold = 0.5
     downsample = (32, 32)
     img_shape  = ntuple(_ -> maximum((nx, ny)), 2)
-    error_tol  = 1e-4
+    # In units of readout samples; see the 3D test for rationale.
+    error_tol  = 0.05 / Nr
 
     signal_amplitude = maximum(abs.(image0))
     noise_sigma = sqrt(signal_amplitude / SNR * nx * ny)

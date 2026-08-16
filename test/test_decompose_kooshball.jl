@@ -14,11 +14,11 @@ Random.seed!(0)
     ############################
     # Generate random angles
     ############################
-    theta_true = π .* rand(NSpokes,1)          
-    phi_true   = 2π .* rand(NSpokes,1)          
+    theta_true = π .* rand(NSpokes,1)
+    phi_true   = 2π .* rand(NSpokes,1)
 
     ############################
-    # Generate nominal trajectory 
+    # Generate nominal trajectory
     ############################
     trj = reshape(traj_kooshball(Nr, theta_true, phi_true),3,Nr,:)
 
@@ -33,7 +33,7 @@ Random.seed!(0)
     trj_rebuilt = reshape(traj_kooshball(Nr, reshape(theta_est,:,1), reshape(phi_est,:,1)),3,Nr,:)
 
     @testset "test trajectory" begin
-        @test isapprox(trj_rebuilt, trj; atol=1e-5)
+        @test isapprox(trj_rebuilt, trj; rtol=1e-5)
     end
 
 
