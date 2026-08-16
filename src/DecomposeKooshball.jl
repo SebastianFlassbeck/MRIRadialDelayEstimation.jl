@@ -4,11 +4,12 @@
 Recover the spoke angles `theta`, `phi` and readout positions `kr` from a
 3D radial (kooshball) trajectory that was generated with `delay = [0, 0, 0]`.
 
-The trajectory is assumed to follow the convention:
+The trajectory is assumed to follow the spherical-coordinate convention used by
+`MRISubspaceRecon.traj_kooshball` (v0.10 and later):
 ```
-k[1, ir, ic] = -sin(θ) * cos(φ) * kr[ir]
-k[2, ir, ic] =  sin(θ) * sin(φ) * kr[ir]
-k[3, ir, ic] =  cos(θ)          * kr[ir]
+k[1, ir, ic] = sin(θ) * cos(φ) * kr[ir]
+k[2, ir, ic] = sin(θ) * sin(φ) * kr[ir]
+k[3, ir, ic] = cos(θ)          * kr[ir]
 ```
 
 # Arguments
@@ -17,8 +18,8 @@ k[3, ir, ic] =  cos(θ)          * kr[ir]
 - `Nr`: number of readout points per spoke.
 
 # Returns
-- `theta::Vector`: polar angle per spoke (length `NSpokes`), in `[0, 2π)`.
-- `phi::Vector`: azimuthal angle per spoke (length `NSpokes`).
+- `theta::Vector`: polar angle per spoke (length `NSpokes`), in `[0, π]`.
+- `phi::Vector`: azimuthal angle per spoke (length `NSpokes`), in `(-π, π]`.
 """
 function decompose_kooshball(trj::AbstractArray{<:Real}, Nr::Integer)
     # Reshape to (3, Nr, NSpokes) if needed
@@ -35,13 +36,13 @@ function decompose_kooshball(trj::AbstractArray{<:Real}, Nr::Integer)
     kr = collect(eltype(trj), ((-Nr + 1) / 2):((Nr - 1) / 2)) / Nr
 
     # For each spoke, k[:,ir,ic] = [a; b; c] * kr[ir], where
-    #   a = -sin(θ)cos(φ),  b = sin(θ)sin(φ),  c = cos(θ)
+    #   a = sin(θ)cos(φ),  b = sin(θ)sin(φ),  c = cos(θ)
     # Recover the slopes via least-squares fit against kr.
     theta = Vector{eltype(trj)}(undef, NSpokes)
     phi   = Vector{eltype(trj)}(undef, NSpokes)
 
     for ic in 1:NSpokes
-        a = kr \ @view(trj[1, :, ic])   # -sin(θ)cos(φ)
+        a = kr \ @view(trj[1, :, ic])   #  sin(θ)cos(φ)
         b = kr \ @view(trj[2, :, ic])   #  sin(θ)sin(φ)
         c = kr \ @view(trj[3, :, ic])   #  cos(θ)
 
@@ -49,8 +50,8 @@ function decompose_kooshball(trj::AbstractArray{<:Real}, Nr::Integer)
         cos_theta = clamp(c, -one(eltype(trj)), one(eltype(trj)))
         theta[ic] = acos(cos_theta)
 
-        # φ from atan2(sin(θ)sin(φ), sin(θ)cos(φ)) = atan2(b, -a)
-        phi[ic] = atan(b, -a)
+        # φ from atan2(sin(θ)sin(φ), sin(θ)cos(φ)) = atan2(b, a)
+        phi[ic] = atan(b, a)
 
     end
 
